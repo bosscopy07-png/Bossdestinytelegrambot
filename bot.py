@@ -16,6 +16,7 @@ from telegram.ext import (
     CallbackQueryHandler,
     ContextTypes,
     filters,
+    Defaults,
 )
 
 # ==================== LOGGING ====================
@@ -34,7 +35,7 @@ TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    message = update.effective_message
+    msg = update.effective_message
 
     keyboard = [
         [
@@ -50,26 +51,26 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
         f"🤖 <b>Welcome, {user.first_name}!</b>\n\n"
         "I'm a feature-rich Telegram bot built with Python.\n\n"
-        "<b>Available Commands:</b>\n"
-        "/start – Show menu\n"
-        "/help – Help center\n"
-        "/echo <text> – Repeat text\n"
-        "/joke – Random joke\n"
-        "/time – Current time\n"
-        "/caps <text> – SHOUT\n"
+        "<b>Commands</b>\n"
+        "/start – Menu\n"
+        "/help – Help\n"
+        "/echo <text>\n"
+        "/joke\n"
+        "/time\n"
+        "/caps <text>\n"
     )
 
-    await message.reply_text(
+    await msg.reply_text(
         text,
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.effective_message.reply_text(
-        "🆘 <b>Bot Help Center</b>\n\n"
-        "<b>Basic:</b>\n"
+        "🆘 <b>Help Center</b>\n\n"
+        "<b>Basic</b>\n"
         "/start /help /time /echo\n\n"
-        "<b>Fun:</b>\n"
+        "<b>Fun</b>\n"
         "/joke /roll /flip /caps\n"
     )
 
@@ -92,18 +93,20 @@ async def time_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.effective_message.reply_text(f"🕐 <code>{now}</code>")
 
 async def roll_dice(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    result = random.randint(1, 6)
-    await update.effective_message.reply_text(f"🎲 <b>{result}</b>")
+    await update.effective_message.reply_text(
+        f"🎲 <b>{random.randint(1, 6)}</b>"
+    )
 
 async def flip_coin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    result = random.choice(["Heads", "Tails"])
-    await update.effective_message.reply_text(f"🪙 <b>{result}</b>")
+    await update.effective_message.reply_text(
+        f"🪙 <b>{random.choice(['Heads', 'Tails'])}</b>"
+    )
 
 async def joke(update: Update, context: ContextTypes.DEFAULT_TYPE):
     jokes = [
         "Why do programmers hate nature? Too many bugs 🐛",
-        "Cache cleared. Brain not found 💀",
         "It works on my machine 🤡",
+        "Cache cleared. Brain not found 💀",
     ]
     await update.effective_message.reply_text(random.choice(jokes))
 
@@ -150,7 +153,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "stats":
         u = query.from_user
         await query.message.reply_text(
-            f"📊 <b>User Stats</b>\n\n"
+            f"📊 <b>Your Stats</b>\n\n"
             f"👤 {u.first_name}\n"
             f"🆔 <code>{u.id}</code>\n"
             f"📛 @{u.username or 'N/A'}"
@@ -159,19 +162,21 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ==================== ERROR HANDLER ====================
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
-    logger.exception("Unhandled error:", exc_info=context.error)
+    logger.exception("Unhandled error", exc_info=context.error)
 
 # ==================== MAIN ====================
 
 def main():
     if not TOKEN:
-        logger.critical("TELEGRAM_BOT_TOKEN not set")
+        logger.critical("❌ TELEGRAM_BOT_TOKEN not set")
         raise SystemExit(1)
+
+    defaults = Defaults(parse_mode=ParseMode.HTML)
 
     app = (
         Application.builder()
         .token(TOKEN)
-        .defaults(parse_mode=ParseMode.HTML)
+        .defaults(defaults)
         .build()
     )
 
@@ -192,7 +197,7 @@ def main():
 
     app.add_error_handler(error_handler)
 
-    logger.info("🤖 Bot started (Render-ready)")
+    logger.info("🤖 Bot started successfully (Render-ready)")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
