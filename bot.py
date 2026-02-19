@@ -223,7 +223,7 @@ async def error_handler(update, context):
 # ===================== MAIN =====================
 
 def main():
-    if not TELEGRAM_BOT_TOKEN or ":" TELEGRAM_BOT_TOKEN:
+    if not TELEGRAM_BOT_TOKEN or ":" not in TELEGRAM_BOT_TOKEN:
         logger.critical("❌ Invalid or missing TELEGRAM_BOT_TOKEN")
         raise SystemExit(1)
 
