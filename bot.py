@@ -231,7 +231,7 @@ def main():
 
     app = (
         Application.builder()
-        .token(TOKEN)
+        .token(TELEGRAM_BOT_TOKEN)
         .defaults(defaults)
         .build()
     )
