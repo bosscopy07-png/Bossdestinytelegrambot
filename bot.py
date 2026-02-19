@@ -2,12 +2,9 @@ import os
 import logging
 import random
 from datetime import datetime
+from typing import Optional
 
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-)
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
@@ -19,7 +16,7 @@ from telegram.ext import (
     Defaults,
 )
 
-# ==================== LOGGING ====================
+# ===================== LOGGING =====================
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,15 +24,24 @@ logging.basicConfig(
 )
 logger = logging.getLogger("telegram-bot")
 
-# ==================== ENV ====================
+# ===================== ENV =====================
 
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TOKEN: Optional[str] = os.getenv("TELEGRAM_BOT_TOKEN")
 
-# ==================== COMMAND HANDLERS ====================
+# ===================== UTIL =====================
+
+def safe_message(update: Update):
+    """Return a message object safely or None"""
+    return update.effective_message if update else None
+
+# ===================== COMMANDS =====================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = safe_message(update)
     user = update.effective_user
-    msg = update.effective_message
+
+    if not msg or not user:
+        return
 
     keyboard = [
         [
@@ -44,13 +50,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ],
         [
             InlineKeyboardButton("🌐 Website", url="https://example.com"),
-            InlineKeyboardButton("📢 Channel", url="https://t.me/channel"),
+            InlineKeyboardButton("📢 Channel", url="https://t.me/Destinyupdat1"),
         ],
     ]
 
     text = (
         f"🤖 <b>Welcome, {user.first_name}!</b>\n\n"
-        "I'm a feature-rich Telegram bot built with Python.\n\n"
+        "I'm a feature-rich Telegram bot.\n\n"
         "<b>Commands</b>\n"
         "/start – Menu\n"
         "/help – Help\n"
@@ -60,13 +66,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/caps <text>\n"
     )
 
-    await msg.reply_text(
-        text,
-        reply_markup=InlineKeyboardMarkup(keyboard),
-    )
+    await msg.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
+
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.effective_message.reply_text(
+    msg = safe_message(update)
+    if not msg:
+        return
+
+    await msg.reply_text(
         "🆘 <b>Help Center</b>\n\n"
         "<b>Basic</b>\n"
         "/start /help /time /echo\n\n"
@@ -74,101 +82,145 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/joke /roll /flip /caps\n"
     )
 
+
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.effective_message
+    msg = safe_message(update)
+    if not msg:
+        return
+
     if not context.args:
         await msg.reply_text("Usage: /echo <text>")
         return
+
     await msg.reply_text(f"📢 <i>{' '.join(context.args)}</i>")
 
+
 async def caps(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.effective_message
+    msg = safe_message(update)
+    if not msg:
+        return
+
     if not context.args:
         await msg.reply_text("Usage: /caps <text>")
         return
+
     await msg.reply_text(f"🔊 {' '.join(context.args).upper()}")
 
+
 async def time_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = safe_message(update)
+    if not msg:
+        return
+
     now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
-    await update.effective_message.reply_text(f"🕐 <code>{now}</code>")
+    await msg.reply_text(f"🕐 <code>{now}</code>")
+
 
 async def roll_dice(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.effective_message.reply_text(
-        f"🎲 <b>{random.randint(1, 6)}</b>"
-    )
+    msg = safe_message(update)
+    if msg:
+        await msg.reply_text(f"🎲 <b>{random.randint(1, 6)}</b>")
+
 
 async def flip_coin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.effective_message.reply_text(
-        f"🪙 <b>{random.choice(['Heads', 'Tails'])}</b>"
-    )
+    msg = safe_message(update)
+    if msg:
+        await msg.reply_text(
+            f"🪙 <b>{random.choice(['Heads', 'Tails'])}</b>"
+        )
+
 
 async def joke(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = safe_message(update)
+    if not msg:
+        return
+
     jokes = [
         "Why do programmers hate nature? Too many bugs 🐛",
         "It works on my machine 🤡",
         "Cache cleared. Brain not found 💀",
     ]
-    await update.effective_message.reply_text(random.choice(jokes))
+    await msg.reply_text(random.choice(jokes))
 
-# ==================== MESSAGE HANDLERS ====================
+# ===================== MESSAGE HANDLERS =====================
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.effective_message.text.lower()
-    user = update.effective_user.first_name
+    msg = safe_message(update)
+    user = update.effective_user
+
+    if not msg or not user:
+        return
+
+    text = msg.text.lower()
 
     if any(w in text for w in ("hi", "hello", "hey")):
-        await update.effective_message.reply_text(f"👋 Hello {user}")
+        await msg.reply_text(f"👋 Hello {user.first_name}")
     else:
-        await update.effective_message.reply_text(
-            f"You said:\n<code>{update.effective_message.text}</code>"
-        )
+        await msg.reply_text(f"You said:\n<code>{msg.text}</code>")
+
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    photo = update.effective_message.photo[-1]
-    await update.effective_message.reply_text(
+    msg = safe_message(update)
+    if not msg or not msg.photo:
+        return
+
+    photo = msg.photo[-1]
+    await msg.reply_text(
         f"📸 {photo.width}x{photo.height} | {photo.file_size} bytes"
     )
 
+
 async def handle_sticker(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.effective_message.reply_sticker(
-        update.effective_message.sticker.file_id
-    )
+    msg = safe_message(update)
+    if msg and msg.sticker:
+        await msg.reply_sticker(msg.sticker.file_id)
+
 
 async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    loc = update.effective_message.location
-    await update.effective_message.reply_text(
+    msg = safe_message(update)
+    if not msg or not msg.location:
+        return
+
+    loc = msg.location
+    await msg.reply_text(
         f"📍 <code>{loc.latitude}, {loc.longitude}</code>\n"
         f"<a href='https://maps.google.com/?q={loc.latitude},{loc.longitude}'>Open Map</a>",
         disable_web_page_preview=True,
     )
 
-# ==================== CALLBACK HANDLER ====================
+# ===================== CALLBACKS =====================
 
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+    if not query:
+        return
+
     await query.answer()
 
-    if query.data == "dice":
-        await query.message.reply_text(f"🎲 {random.randint(1, 6)}")
-    elif query.data == "stats":
-        u = query.from_user
-        await query.message.reply_text(
-            f"📊 <b>Your Stats</b>\n\n"
-            f"👤 {u.first_name}\n"
-            f"🆔 <code>{u.id}</code>\n"
-            f"📛 @{u.username or 'N/A'}"
-        )
+    try:
+        if query.data == "dice":
+            await query.message.reply_text(f"🎲 {random.randint(1, 6)}")
+        elif query.data == "stats":
+            u = query.from_user
+            await query.message.reply_text(
+                f"📊 <b>Your Stats</b>\n\n"
+                f"👤 {u.first_name}\n"
+                f"🆔 <code>{u.id}</code>\n"
+                f"📛 @{u.username or 'N/A'}"
+            )
+    except Exception as e:
+        logger.warning("Callback failed safely: %s", e)
 
-# ==================== ERROR HANDLER ====================
+# ===================== ERROR HANDLER =====================
 
-async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+async def error_handler(update, context):
     logger.exception("Unhandled error", exc_info=context.error)
 
-# ==================== MAIN ====================
+# ===================== MAIN =====================
 
 def main():
-    if not TOKEN:
-        logger.critical("❌ TELEGRAM_BOT_TOKEN not set")
+    if not TOKEN or ":" not in TOKEN:
+        logger.critical("❌ Invalid or missing TELEGRAM_BOT_TOKEN")
         raise SystemExit(1)
 
     defaults = Defaults(parse_mode=ParseMode.HTML)
@@ -180,6 +232,7 @@ def main():
         .build()
     )
 
+    # Commands
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("echo", echo))
@@ -189,16 +242,18 @@ def main():
     app.add_handler(CommandHandler("flip", flip_coin))
     app.add_handler(CommandHandler("joke", joke))
 
+    # Messages
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.Sticker.ALL, handle_sticker))
     app.add_handler(MessageHandler(filters.LOCATION, handle_location))
-    app.add_handler(CallbackQueryHandler(button_callback))
 
+    # Callbacks + errors
+    app.add_handler(CallbackQueryHandler(button_callback))
     app.add_error_handler(error_handler)
 
-    logger.info("🤖 Bot started successfully (Render-ready)")
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    logger.info("🤖 Bot started — hardened & Render-safe")
+    app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
