@@ -232,6 +232,7 @@ def main():
     app = (
         Application.builder()
         .token(TELEGRAM_BOT_TOKEN)
+        .parse_mode(ParseMode.HTML)
         .defaults(defaults)
         .build()
     )
