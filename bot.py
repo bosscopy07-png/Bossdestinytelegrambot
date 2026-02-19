@@ -26,7 +26,11 @@ logger = logging.getLogger("telegram-bot")
 
 # ===================== ENV =====================
 
-TOKEN: Optional[str] = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+
+if not TELEGRAM_BOT_TOKEN:
+    raise RuntimeError("TELEGRAM_BOT_TOKEN not set in environment variables")
+    
 
 # ===================== UTIL =====================
 
